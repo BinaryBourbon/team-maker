@@ -42,7 +42,9 @@ export function HireModal({ agent, onClose }: HireModalProps) {
 
   useEffect(() => {
     if (agent && step === "preview") {
-      setManifest(generateReadableManifest(agent, envValues));
+      // Apply preview: show agent doc only (no environment doc to avoid
+      // echoing secret values back into the UI)
+      setManifest(generateReadableManifest(agent, envValues, { includeEnvironment: false }));
     }
   }, [agent, envValues, step]);
 
@@ -55,11 +57,8 @@ export function HireModal({ agent, onClose }: HireModalProps) {
   };
 
   const handleGenerateManifest = () => {
-    // Generate with empty envValues so {{VAR}} placeholders are preserved,
-    // then replace {{VAR}} with $VAR for the manifest-only display
-    const raw = generateReadableManifest(agent, {});
-    const withDollarSigns = raw.replace(/\{\{(\w+)\}\}/g, "$$$1");
-    setManifest(withDollarSigns);
+    // Empty envValues → generator emits ${VAR} placeholders throughout
+    setManifest(generateReadableManifest(agent, {}));
     setManifestGenerated(true);
   };
 

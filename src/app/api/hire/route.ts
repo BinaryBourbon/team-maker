@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Agent template not found" }, { status: 404 });
     }
 
-    const manifest = generateReadableManifest(template, envValues || {});
+    const manifest = generateReadableManifest(template, envValues || {}, { includeEnvironment: false });
 
     // Build MCP servers config, interpolating env var placeholders with provided values
     const mcpServersConfig: Record<string, unknown> = {};
