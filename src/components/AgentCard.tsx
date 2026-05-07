@@ -162,12 +162,12 @@ export function AgentCard({ agent, onHire }: AgentCardProps) {
               🔌 {s.name}
             </span>
           ))}
-          {agent.skills.map((s) => (
+          {agent.skills.map((s, i) => (
             <span
-              key={s}
+              key={s.name ?? `${s.source}-${i}`}
               className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md"
             >
-              ⚡ {s}
+              ⚡ {s.name ?? s.source.split("/")[1]}
             </span>
           ))}
         </div>

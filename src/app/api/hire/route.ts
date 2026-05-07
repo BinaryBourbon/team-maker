@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       model: template.model,
       system: template.systemPrompt,
     };
-    if (template.skills.length > 0) agentPayload.skills = template.skills;
+    if (template.skills.length > 0) agentPayload.skills = template.skills; // already {name?, source} objects
     if (Object.keys(mcpServersConfig).length > 0) agentPayload.mcp_servers = mcpServersConfig;
 
     // Check if agent already exists
