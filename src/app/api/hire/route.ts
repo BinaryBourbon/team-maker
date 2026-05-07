@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       runtime: template.runtime,
       model: template.model,
       system: template.systemPrompt,
-      environment: environmentName,
+      environment: environmentId,
     };
     if (template.skills.length > 0) agentPayload.skills = template.skills;
     if (Object.keys(mcpServersConfig).length > 0) agentPayload.mcp_servers = mcpServersConfig;
