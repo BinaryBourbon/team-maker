@@ -348,27 +348,97 @@ export function HireModal({ agent, onClose }: HireModalProps) {
 
           {/* Step: Preview */}
           {step === "preview" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  📄 Generated Manifest
-                </h3>
-                <button
-                  onClick={copyManifest}
-                  className="text-xs text-blue-500 hover:text-blue-600"
-                >
-                  {copied ? "✓ Copied" : "Copy"}
-                </button>
-              </div>
-              <pre className="bg-gray-950 text-green-400 text-xs rounded-xl p-4 overflow-x-auto leading-relaxed font-mono max-h-72 overflow-y-auto">
-                {manifest}
-              </pre>
-              <p className="text-xs text-gray-500">
-                This manifest will be applied to your AoD instance at{" "}
-                <code className="text-amber-600 dark:text-amber-400">{aodBaseUrl}</code>. Agent will be
-                immediately available.
+            <div className="space-y-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Here&rsquo;s exactly what will be created in your AoD instance at{" "}
+                <code className="text-amber-600 dark:text-amber-400 break-all">{aodBaseUrl}</code>.
               </p>
-              <div className="flex gap-3">
+
+              {/* Environment card */}
+              {agent.envVars.length > 0 && (
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                    <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Environment</span>
+                    <code className="text-xs font-mono text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                      team-maker-{agent.id}
+                    </code>
+                  </div>
+                  <div className="px-4 py-3 space-y-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Secrets to be stored:</p>
+                    {agent.envVars.map((v) => (
+                      <div key={v.key} className="flex items-center justify-between">
+                        <code className="text-xs font-mono font-semibold text-amber-700 dark:text-amber-400">
+                          {v.key}
+                        </code>
+                        <span className="text-xs font-mono text-gray-400 dark:text-gray-500 tracking-widest">
+                          {envValues[v.key] ? "••••••••" : <span className="text-red-400 not-italic font-sans">not set</span>}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Agent card */}
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                  <span className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Agent</span>
+                  <code className="text-xs font-mono text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">
+                    {agent.id}
+                  </code>
+                </div>
+                <div className="px-4 py-3 space-y-3">
+                  {/* Runtime + model */}
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-md font-mono">
+                      {agent.runtime}
+                    </span>
+                    <span className="text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-md font-mono">
+                      {agent.model}
+                    </span>
+                    {agent.envVars.length > 0 && (
+                      <span className="text-xs bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 px-2 py-1 rounded-md font-mono">
+                        env: team-maker-{agent.id}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* MCP servers */}
+                  {agent.mcpServers.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">MCP servers:</p>
+                      <div className="space-y-1.5">
+                        {agent.mcpServers.map((s) => (
+                          <div key={s.name} className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-semibold text-gray-700 dark:text-gray-300 w-24 shrink-0">
+                              🔌 {s.name}
+                            </span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              {s.type === "http" ? s.url : `${s.command} ${(s.args ?? []).join(" ")}`}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Skills */}
+                  {agent.skills.length > 0 && (
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1.5">Skills:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {agent.skills.map((s, i) => (
+                          <span key={i} className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md font-mono">
+                            ⚡ {s.name ? `${s.source}/${s.name}` : s.source}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-1">
                 <button
                   onClick={() => setStep("config")}
                   className="flex-1 py-2.5 px-4 rounded-xl font-medium text-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
