@@ -17,9 +17,7 @@ export async function POST(req: NextRequest) {
 
     const manifest = generateReadableManifest(template, envValues || {});
 
-    // Apply the manifest to AoD via CLI-compatible apply endpoint
-    // AoD doesn't have a direct "apply manifest" REST endpoint — instead we create/update
-    // the agent directly through the agents API
+    // Build MCP servers config, interpolating env var placeholders with provided values
     const mcpServersConfig: Record<string, unknown> = {};
     template.mcpServers.forEach((server) => {
       const interpolated = { ...server };
@@ -45,16 +43,7 @@ export async function POST(req: NextRequest) {
       mcpServersConfig[interpolated.name] = serverConfig;
     });
 
-    const agentPayload: Record<string, unknown> = {
-      name: template.id,
-      runtime: template.runtime,
-      model: template.model,
-      system: template.systemPrompt,
-    };
-    if (template.skills.length > 0) agentPayload.skills = template.skills; // already {name?, source} objects
-    if (Object.keys(mcpServersConfig).length > 0) agentPayload.mcp_servers = mcpServersConfig;
-
-    // Check if agent already exists
+    // Check if AoD connection is valid by listing agents
     const listRes = await fetch(`${aodBaseUrl}/api/agents`, {
       headers: { Authorization: `Bearer ${aodToken}` },
     });
@@ -62,6 +51,71 @@ export async function POST(req: NextRequest) {
     if (!listRes.ok) {
       return NextResponse.json({ error: "Failed to connect to AoD. Check your URL and token." }, { status: 502 });
     }
+
+    // --- Environment creation and secret storage ---
+    const environmentName = `team-maker-${agentId}`;
+
+    // Check if the environment already exists
+    const envsRes = await fetch(`${aodBaseUrl}/api/environments`, {
+      headers: { Authorization: `Bearer ${aodToken}` },
+    });
+
+    let environmentId: string | null = null;
+
+    if (envsRes.ok) {
+      const envsData = await envsRes.json();
+      const existingEnv = envsData.data?.find(
+        (e: { name: string; id: string }) => e.name === environmentName
+      );
+      if (existingEnv) {
+        environmentId = existingEnv.id as string;
+      }
+    }
+
+    // Create the environment if it doesn't exist
+    if (!environmentId) {
+      const createEnvRes = await fetch(`${aodBaseUrl}/api/environments`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${aodToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: environmentName, packages: {} }),
+      });
+
+      if (createEnvRes.ok) {
+        const createEnvData = await createEnvRes.json();
+        environmentId = createEnvData.data?.id as string | null;
+      }
+    }
+
+    // Write each provided secret into the environment
+    if (environmentId && envValues && typeof envValues === "object") {
+      const secretEntries = Object.entries(envValues as Record<string, string>);
+      for (const [key, value] of secretEntries) {
+        if (key && value) {
+          await fetch(`${aodBaseUrl}/api/environments/${environmentId}/secrets`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${aodToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ key, value }),
+          });
+        }
+      }
+    }
+    // --- End environment setup ---
+
+    const agentPayload: Record<string, unknown> = {
+      name: template.id,
+      runtime: template.runtime,
+      model: template.model,
+      system: template.systemPrompt,
+      environment: environmentName,
+    };
+    if (template.skills.length > 0) agentPayload.skills = template.skills;
+    if (Object.keys(mcpServersConfig).length > 0) agentPayload.mcp_servers = mcpServersConfig;
 
     const listData = await listRes.json();
     const existing = listData.data?.find((a: { name: string }) => a.name === template.id);
@@ -101,6 +155,7 @@ export async function POST(req: NextRequest) {
       agent: agentData.data,
       manifest,
       action: existing ? "updated" : "created",
+      environmentId,
     });
   } catch (err) {
     console.error("Hire API error:", err);

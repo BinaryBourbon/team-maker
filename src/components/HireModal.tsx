@@ -19,7 +19,7 @@ export function HireModal({ agent, onClose }: HireModalProps) {
   const [aodBaseUrl, setAodBaseUrl] = useState("");
   const [aodToken, setAodToken] = useState("");
   const [manifest, setManifest] = useState("");
-  const [result, setResult] = useState<{ action: string; agent: { name: string } } | null>(null);
+  const [result, setResult] = useState<{ action: string; agent: { name: string }; environmentId?: string | null } | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [manifestGenerated, setManifestGenerated] = useState(false);
@@ -55,7 +55,11 @@ export function HireModal({ agent, onClose }: HireModalProps) {
   };
 
   const handleGenerateManifest = () => {
-    setManifest(generateReadableManifest(agent, envValues));
+    // Generate with empty envValues so {{VAR}} placeholders are preserved,
+    // then replace {{VAR}} with $VAR for the manifest-only display
+    const raw = generateReadableManifest(agent, {});
+    const withDollarSigns = raw.replace(/\{\{(\w+)\}\}/g, "$$$1");
+    setManifest(withDollarSigns);
     setManifestGenerated(true);
   };
 
@@ -243,43 +247,34 @@ export function HireModal({ agent, onClose }: HireModalProps) {
               {/* Get Manifest Only tab */}
               {configTab === "manifest-only" && (
                 <>
-                  {/* Env vars only (no AoD URL/token) */}
+                  {/* Requirements section — read-only, no secret inputs */}
                   {agent.envVars.length > 0 && (
                     <div>
                       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                        🔑 Required Secrets
+                        Requirements
                       </h3>
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         {agent.envVars.map((v) => (
-                          <div key={v.key}>
-                            <div className="flex items-center gap-2 mb-1">
-                              <label className="text-xs font-mono font-medium text-amber-700 dark:text-amber-400">
-                                {v.key}
-                              </label>
-                              {v.required && (
-                                <span className="text-xs text-red-500">required</span>
-                              )}
-                              {v.link && (
-                                <a
-                                  href={v.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-blue-500 hover:underline ml-auto"
-                                >
-                                  Get it →
-                                </a>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500 mb-1">{v.description}</p>
-                            <input
-                              type="password"
-                              value={envValues[v.key] || ""}
-                              onChange={(e) =>
-                                setEnvValues((prev) => ({ ...prev, [v.key]: e.target.value }))
-                              }
-                              placeholder={v.placeholder}
-                              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
+                          <div
+                            key={v.key}
+                            className="flex items-start gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2.5"
+                          >
+                            <code className="text-xs font-mono font-semibold text-amber-700 dark:text-amber-400 shrink-0 mt-0.5">
+                              {v.key}
+                            </code>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 flex-1">
+                              {v.description}
+                            </p>
+                            {v.link && (
+                              <a
+                                href={v.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 shrink-0 font-medium"
+                              >
+                                Get it →
+                              </a>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -318,6 +313,20 @@ export function HireModal({ agent, onClose }: HireModalProps) {
                       >
                         <span>⬇</span> Download manifest.yml
                       </button>
+
+                      {/* Secrets callout */}
+                      <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                        <p className="text-xs text-amber-800 dark:text-amber-300 font-semibold mb-1">
+                          Before starting a conversation
+                        </p>
+                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                          Add these secrets to an AoD environment named{" "}
+                          <code className="bg-amber-100 dark:bg-amber-900/50 px-1 rounded font-mono">
+                            team-maker-{agent.id}
+                          </code>{" "}
+                          before starting a conversation.
+                        </p>
+                      </div>
 
                       {/* Tip box */}
                       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
@@ -410,6 +419,14 @@ export function HireModal({ agent, onClose }: HireModalProps) {
                   <strong>{result?.agent?.name || agent.id}</strong>.
                 </p>
               </div>
+              {result?.environmentId && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-3 text-xs text-green-700 dark:text-green-300">
+                  Secrets stored in environment{" "}
+                  <code className="font-mono bg-green-100 dark:bg-green-900/40 px-1 rounded">
+                    team-maker-{agent.id}
+                  </code>
+                </div>
+              )}
               <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-xs text-gray-600 dark:text-gray-400">
                 <p className="font-medium mb-1">Next steps:</p>
                 <ol className="list-decimal list-inside space-y-1">
