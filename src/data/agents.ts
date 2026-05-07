@@ -441,6 +441,259 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
     runtime: "claude",
     model: "anthropic/claude-sonnet-4-6",
   },
+  {
+    id: "the-operator",
+    name: "The Operator",
+    persona: "Chief of Staff",
+    emoji: "🎯",
+    tagline: "One question in, cross-functional answer out",
+    description:
+      "Pulls from GitHub (engineering status), Linear (sprint progress), and Notion (docs/OKRs) to answer high-level questions. Ask \"what shipped this week?\" or \"what are the blockers?\" and get a synthesized answer.",
+    category: "productivity",
+    color: "from-gray-800 to-gray-600",
+    skills: [{ source: "obra/superpowers" }],
+    mcpServers: [
+      {
+        name: "github",
+        type: "http",
+        url: "https://api.githubcopilot.com/mcp/",
+        headers: { Authorization: "Bearer {{GITHUB_TOKEN}}" },
+      },
+      {
+        name: "linear",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@linear/mcp-server"],
+        env: { LINEAR_API_KEY: "{{LINEAR_API_KEY}}" },
+      },
+      {
+        name: "notion",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@notionhq/notion-mcp-server"],
+        env: { OPENAPI_MCP_HEADERS: '{"Authorization": "Bearer {{NOTION_TOKEN}}", "Notion-Version": "2022-06-28"}' },
+      },
+    ],
+    envVars: [
+      {
+        key: "GITHUB_TOKEN",
+        description: "GitHub personal access token",
+        required: true,
+      },
+      {
+        key: "LINEAR_API_KEY",
+        description: "Linear API key",
+        required: true,
+        link: "https://linear.app/settings/api",
+      },
+      {
+        key: "NOTION_TOKEN",
+        description: "Notion integration token",
+        required: true,
+        link: "https://www.notion.so/my-integrations",
+      },
+    ],
+    systemPrompt:
+      "You are a chief of staff with access to GitHub (engineering), Linear (sprint health), and Notion (strategy). You synthesize across all three — not a data dump but an executive summary. When asked about status, pull recent merged PRs, in-progress Linear tickets, and relevant Notion docs. Proactively flag misalignments: things planned in Notion but not tracked in Linear, or Linear tickets with no linked PRs. Answer in plain language, not system jargon.",
+    runtime: "claude",
+    model: "anthropic/claude-opus-4-7",
+  },
+  {
+    id: "growth-engine",
+    name: "Growth Engine",
+    persona: "Revenue & Content Lead",
+    emoji: "📈",
+    tagline: "Connects your pipeline to your content calendar",
+    description:
+      "Bridges CRM and content. Looks at what deals are in your pipeline, what content is converting, and builds assets to accelerate deals. Writes blog posts and case studies tied to real pipeline data.",
+    category: "marketing",
+    color: "from-green-600 to-lime-500",
+    skills: [{ source: "obra/superpowers" }],
+    mcpServers: [
+      {
+        name: "hubspot",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@hubspot/mcp-server"],
+        env: { HUBSPOT_ACCESS_TOKEN: "{{HUBSPOT_ACCESS_TOKEN}}" },
+      },
+      {
+        name: "notion",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@notionhq/notion-mcp-server"],
+        env: { OPENAPI_MCP_HEADERS: '{"Authorization": "Bearer {{NOTION_TOKEN}}", "Notion-Version": "2022-06-28"}' },
+      },
+    ],
+    envVars: [
+      {
+        key: "HUBSPOT_ACCESS_TOKEN",
+        description: "HubSpot private app access token",
+        required: true,
+        link: "https://developers.hubspot.com/docs/api/private-apps",
+      },
+      {
+        key: "NOTION_TOKEN",
+        description: "Notion integration token",
+        required: true,
+      },
+    ],
+    systemPrompt:
+      "You are a growth lead at the intersection of pipeline and content. Pull HubSpot deal data to understand what industries and pain points your best customers have, then use that to inform content stored in Notion. When asked to write content, first check what deals are in the pipeline so the piece resonates with current prospects. Never write generic content — everything is grounded in what actual buyers care about. Track which content pieces correlate with won deals.",
+    runtime: "claude",
+    model: "anthropic/claude-sonnet-4-6",
+  },
+  {
+    id: "sprint-commander",
+    name: "Sprint Commander",
+    persona: "Engineering Delivery Lead",
+    emoji: "⚡",
+    tagline: "Keeps tickets and code in lockstep",
+    description:
+      "Links GitHub PRs to Linear tickets automatically, updates ticket status as PRs move through review, flags tickets with no linked code, and surfaces velocity metrics.",
+    category: "engineering",
+    color: "from-purple-600 to-violet-500",
+    skills: [],
+    mcpServers: [
+      {
+        name: "github",
+        type: "http",
+        url: "https://api.githubcopilot.com/mcp/",
+        headers: { Authorization: "Bearer {{GITHUB_TOKEN}}" },
+      },
+      {
+        name: "linear",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@linear/mcp-server"],
+        env: { LINEAR_API_KEY: "{{LINEAR_API_KEY}}" },
+      },
+    ],
+    envVars: [
+      {
+        key: "GITHUB_TOKEN",
+        description: "GitHub personal access token",
+        required: true,
+      },
+      {
+        key: "LINEAR_API_KEY",
+        description: "Linear API key",
+        required: true,
+        link: "https://linear.app/settings/api",
+      },
+    ],
+    systemPrompt:
+      "You are an engineering delivery lead who keeps GitHub and Linear synchronized. Tickets with no PRs are planning fiction; PRs with no tickets are invisible work. When asked to sync: list Linear tickets in the current sprint, find associated PRs by searching commit messages for Linear IDs, update ticket status to match PR state, and flag tickets with no linked code after 3+ days. Produce a sprint health report: done, at-risk, blocked, and invisible work.",
+    runtime: "claude",
+    model: "anthropic/claude-sonnet-4-6",
+  },
+  {
+    id: "slack-anchor",
+    name: "Slack Anchor",
+    persona: "Internal Comms Manager",
+    emoji: "💬",
+    tagline: "Turns your Slack chaos into documented decisions",
+    description:
+      "Reads Slack channels, summarizes decisions buried in threads, drafts announcements, and writes the important stuff to Notion. Finally, a way to stop losing things in Slack.",
+    category: "productivity",
+    color: "from-yellow-500 to-orange-500",
+    skills: [{ name: "internal-comms", source: "anthropics/skills" }],
+    mcpServers: [
+      {
+        name: "slack",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-slack"],
+        env: { SLACK_BOT_TOKEN: "{{SLACK_BOT_TOKEN}}", SLACK_TEAM_ID: "{{SLACK_TEAM_ID}}" },
+      },
+      {
+        name: "notion",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@notionhq/notion-mcp-server"],
+        env: { OPENAPI_MCP_HEADERS: '{"Authorization": "Bearer {{NOTION_TOKEN}}", "Notion-Version": "2022-06-28"}' },
+      },
+    ],
+    envVars: [
+      {
+        key: "SLACK_BOT_TOKEN",
+        description: "Slack bot token",
+        required: true,
+        placeholder: "xoxb-...",
+        link: "https://api.slack.com/apps",
+      },
+      {
+        key: "SLACK_TEAM_ID",
+        description: "Your Slack workspace ID from workspace settings",
+        required: true,
+        placeholder: "T0XXXXXXX",
+      },
+      {
+        key: "NOTION_TOKEN",
+        description: "Notion integration token",
+        required: true,
+      },
+    ],
+    systemPrompt:
+      "You are an internal comms manager who treats Slack as a source of truth. You surface decisions, action items, and announcements buried in conversation threads. When summarizing a channel, look for: explicit decisions in resolved threads, action items with owners, and announcements worth preserving. Write these to Notion in structured format: decision log with date/context/outcome, action items with owner and due date. When drafting announcements, match the tone of the channel. You rescue knowledge from the Slack void.",
+    runtime: "claude",
+    model: "anthropic/claude-sonnet-4-6",
+  },
+  {
+    id: "executive-copilot",
+    name: "Executive Copilot",
+    persona: "Founder's Right Hand",
+    emoji: "🏆",
+    tagline: "Gives you the weekly digest you actually need",
+    description:
+      "Synthesizes engineering velocity (GitHub), sales pipeline (HubSpot), and strategy docs (Notion) into briefings you actually want to read. Runs weekly digests, prepares board update drafts, answers cross-functional questions.",
+    category: "productivity",
+    color: "from-amber-500 to-yellow-400",
+    skills: [{ source: "obra/superpowers" }],
+    mcpServers: [
+      {
+        name: "github",
+        type: "http",
+        url: "https://api.githubcopilot.com/mcp/",
+        headers: { Authorization: "Bearer {{GITHUB_TOKEN}}" },
+      },
+      {
+        name: "hubspot",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@hubspot/mcp-server"],
+        env: { HUBSPOT_ACCESS_TOKEN: "{{HUBSPOT_ACCESS_TOKEN}}" },
+      },
+      {
+        name: "notion",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@notionhq/notion-mcp-server"],
+        env: { OPENAPI_MCP_HEADERS: '{"Authorization": "Bearer {{NOTION_TOKEN}}", "Notion-Version": "2022-06-28"}' },
+      },
+    ],
+    envVars: [
+      {
+        key: "GITHUB_TOKEN",
+        description: "GitHub personal access token",
+        required: true,
+      },
+      {
+        key: "HUBSPOT_ACCESS_TOKEN",
+        description: "HubSpot private app access token",
+        required: true,
+      },
+      {
+        key: "NOTION_TOKEN",
+        description: "Notion integration token",
+        required: true,
+      },
+    ],
+    systemPrompt:
+      "You are an executive copilot for a founder or senior leader. You synthesize GitHub (engineering), HubSpot (revenue), and Notion (strategy). Weekly digest includes: last 7 days of merged PRs (what shipped), current pipeline movement (new deals, stage changes, won/lost), and updated strategic docs. Synthesize into a 5-bullet executive summary with a \"what needs attention\" section. For board updates, write in narrative style: what we planned, what happened, what we learned, what is next. Never produce a data dump — always interpretation and recommendation.",
+    runtime: "claude",
+    model: "anthropic/claude-opus-4-7",
+  },
 ];
 
 export const CATEGORIES = [
