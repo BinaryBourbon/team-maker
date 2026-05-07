@@ -10,9 +10,11 @@ interface HireModalProps {
 }
 
 type Step = "config" | "preview" | "hiring" | "done" | "error";
+type ConfigTab = "connect" | "manifest-only";
 
 export function HireModal({ agent, onClose }: HireModalProps) {
   const [step, setStep] = useState<Step>("config");
+  const [configTab, setConfigTab] = useState<ConfigTab>("connect");
   const [envValues, setEnvValues] = useState<Record<string, string>>({});
   const [aodBaseUrl, setAodBaseUrl] = useState("");
   const [aodToken, setAodToken] = useState("");
@@ -20,13 +22,16 @@ export function HireModal({ agent, onClose }: HireModalProps) {
   const [result, setResult] = useState<{ action: string; agent: { name: string } } | null>(null);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const [manifestGenerated, setManifestGenerated] = useState(false);
 
   useEffect(() => {
     if (agent) {
       setStep("config");
+      setConfigTab("connect");
       setEnvValues({});
       setError("");
       setResult(null);
+      setManifestGenerated(false);
       // Load saved AoD connection from localStorage
       const savedUrl = localStorage.getItem("aod_base_url") || "";
       const savedToken = localStorage.getItem("aod_token") || "";
@@ -47,6 +52,21 @@ export function HireModal({ agent, onClose }: HireModalProps) {
     if (aodBaseUrl) localStorage.setItem("aod_base_url", aodBaseUrl);
     if (aodToken) localStorage.setItem("aod_token", aodToken);
     setStep("preview");
+  };
+
+  const handleGenerateManifest = () => {
+    setManifest(generateReadableManifest(agent, envValues));
+    setManifestGenerated(true);
+  };
+
+  const handleDownloadManifest = () => {
+    const blob = new Blob([manifest], { type: "text/yaml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "manifest.yml";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleHire = async () => {
@@ -107,89 +127,214 @@ export function HireModal({ agent, onClose }: HireModalProps) {
           {/* Step: Config */}
           {step === "config" && (
             <div className="space-y-5">
-              {/* AoD connection */}
-              <div>
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  🔗 Your AoD Connection
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                      AOD_BASE_URL
-                    </label>
-                    <input
-                      type="url"
-                      value={aodBaseUrl}
-                      onChange={(e) => setAodBaseUrl(e.target.value)}
-                      placeholder="https://your-aod.onrender.com"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                      AOD_TOKEN
-                    </label>
-                    <input
-                      type="password"
-                      value={aodToken}
-                      onChange={(e) => setAodToken(e.target.value)}
-                      placeholder="your-aod-bearer-token"
-                      className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
+              {/* Tab switcher */}
+              <div className="flex rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setConfigTab("connect")}
+                  className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                    configTab === "connect"
+                      ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                      : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  Connect to AoD
+                </button>
+                <button
+                  onClick={() => { setConfigTab("manifest-only"); setManifestGenerated(false); }}
+                  className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                    configTab === "manifest-only"
+                      ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                      : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  Get Manifest Only
+                </button>
               </div>
 
-              {/* Env vars */}
-              {agent.envVars.length > 0 && (
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                    🔑 Required Secrets
-                  </h3>
-                  <div className="space-y-3">
-                    {agent.envVars.map((v) => (
-                      <div key={v.key}>
-                        <div className="flex items-center gap-2 mb-1">
-                          <label className="text-xs font-mono font-medium text-amber-700 dark:text-amber-400">
-                            {v.key}
-                          </label>
-                          {v.required && (
-                            <span className="text-xs text-red-500">required</span>
-                          )}
-                          {v.link && (
-                            <a
-                              href={v.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-500 hover:underline ml-auto"
-                            >
-                              Get it →
-                            </a>
-                          )}
-                        </div>
-                        <p className="text-xs text-gray-500 mb-1">{v.description}</p>
+              {/* Connect to AoD tab */}
+              {configTab === "connect" && (
+                <>
+                  {/* AoD connection */}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                      🔗 Your AoD Connection
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                          AOD_BASE_URL
+                        </label>
                         <input
-                          type="password"
-                          value={envValues[v.key] || ""}
-                          onChange={(e) =>
-                            setEnvValues((prev) => ({ ...prev, [v.key]: e.target.value }))
-                          }
-                          placeholder={v.placeholder}
-                          className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          type="url"
+                          value={aodBaseUrl}
+                          onChange={(e) => setAodBaseUrl(e.target.value)}
+                          placeholder="https://your-aod.onrender.com"
+                          className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
-                    ))}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                          AOD_TOKEN
+                        </label>
+                        <input
+                          type="password"
+                          value={aodToken}
+                          onChange={(e) => setAodToken(e.target.value)}
+                          placeholder="your-aod-bearer-token"
+                          className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
+
+                  {/* Env vars */}
+                  {agent.envVars.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        🔑 Required Secrets
+                      </h3>
+                      <div className="space-y-3">
+                        {agent.envVars.map((v) => (
+                          <div key={v.key}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <label className="text-xs font-mono font-medium text-amber-700 dark:text-amber-400">
+                                {v.key}
+                              </label>
+                              {v.required && (
+                                <span className="text-xs text-red-500">required</span>
+                              )}
+                              {v.link && (
+                                <a
+                                  href={v.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-500 hover:underline ml-auto"
+                                >
+                                  Get it →
+                                </a>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 mb-1">{v.description}</p>
+                            <input
+                              type="password"
+                              value={envValues[v.key] || ""}
+                              onChange={(e) =>
+                                setEnvValues((prev) => ({ ...prev, [v.key]: e.target.value }))
+                              }
+                              placeholder={v.placeholder}
+                              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleNext}
+                    disabled={!canProceed}
+                    className={`w-full py-3 px-4 rounded-xl font-semibold text-sm text-white bg-gradient-to-r ${agent.color} hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
+                  >
+                    Preview Manifest →
+                  </button>
+                </>
               )}
 
-              <button
-                onClick={handleNext}
-                disabled={!canProceed}
-                className={`w-full py-3 px-4 rounded-xl font-semibold text-sm text-white bg-gradient-to-r ${agent.color} hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
-              >
-                Preview Manifest →
-              </button>
+              {/* Get Manifest Only tab */}
+              {configTab === "manifest-only" && (
+                <>
+                  {/* Env vars only (no AoD URL/token) */}
+                  {agent.envVars.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                        🔑 Required Secrets
+                      </h3>
+                      <div className="space-y-3">
+                        {agent.envVars.map((v) => (
+                          <div key={v.key}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <label className="text-xs font-mono font-medium text-amber-700 dark:text-amber-400">
+                                {v.key}
+                              </label>
+                              {v.required && (
+                                <span className="text-xs text-red-500">required</span>
+                              )}
+                              {v.link && (
+                                <a
+                                  href={v.link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-500 hover:underline ml-auto"
+                                >
+                                  Get it →
+                                </a>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 mb-1">{v.description}</p>
+                            <input
+                              type="password"
+                              value={envValues[v.key] || ""}
+                              onChange={(e) =>
+                                setEnvValues((prev) => ({ ...prev, [v.key]: e.target.value }))
+                              }
+                              placeholder={v.placeholder}
+                              className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!manifestGenerated ? (
+                    <button
+                      onClick={handleGenerateManifest}
+                      className={`w-full py-3 px-4 rounded-xl font-semibold text-sm text-white bg-gradient-to-r ${agent.color} hover:opacity-90 active:scale-95 transition-all`}
+                    >
+                      Generate Manifest
+                    </button>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* YAML output */}
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                          📄 Generated Manifest
+                        </h3>
+                        <button
+                          onClick={copyManifest}
+                          className="text-xs text-blue-500 hover:text-blue-600"
+                        >
+                          {copied ? "✓ Copied" : "Copy YAML"}
+                        </button>
+                      </div>
+                      <pre className="bg-gray-950 text-green-400 text-xs rounded-xl p-4 overflow-x-auto leading-relaxed font-mono max-h-60 overflow-y-auto">
+                        {manifest}
+                      </pre>
+
+                      {/* Download button */}
+                      <button
+                        onClick={handleDownloadManifest}
+                        className="w-full py-2.5 px-4 rounded-xl font-semibold text-sm border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span>⬇</span> Download manifest.yml
+                      </button>
+
+                      {/* Tip box */}
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                        <p className="text-xs text-blue-700 dark:text-blue-300 font-medium mb-1">
+                          💡 No AoD yet?
+                        </p>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mb-2">
+                          Install with:
+                        </p>
+                        <code className="block text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 rounded-lg px-3 py-2 font-mono">
+                          brew install jhgaylor/tap/aod &amp;&amp; aod apply -f manifest.yml
+                        </code>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
 
