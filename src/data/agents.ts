@@ -36,6 +36,118 @@ export interface AgentTemplate {
 
 export const AGENT_TEMPLATES: AgentTemplate[] = [
   {
+    id: "executive-copilot",
+    name: "Executive Copilot",
+    persona: "Founder's Right Hand",
+    emoji: "🏆",
+    tagline: "Gives you the weekly digest you actually need",
+    description:
+      "Synthesizes engineering velocity (GitHub), sales pipeline (HubSpot), and strategy docs (Notion) into briefings you actually want to read. Runs weekly digests, prepares board update drafts, answers cross-functional questions.",
+    category: "productivity",
+    color: "from-amber-500 to-yellow-400",
+    skills: [{ source: "obra/superpowers" }],
+    mcpServers: [
+      {
+        name: "github",
+        type: "http",
+        url: "https://api.githubcopilot.com/mcp/",
+        headers: { Authorization: "Bearer {{GITHUB_TOKEN}}" },
+      },
+      {
+        name: "hubspot",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@hubspot/mcp-server"],
+        env: { HUBSPOT_ACCESS_TOKEN: "{{HUBSPOT_ACCESS_TOKEN}}" },
+      },
+      {
+        name: "notion",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@notionhq/notion-mcp-server"],
+        env: { OPENAPI_MCP_HEADERS: '{"Authorization": "Bearer {{NOTION_TOKEN}}", "Notion-Version": "2022-06-28"}' },
+      },
+    ],
+    envVars: [
+      {
+        key: "GITHUB_TOKEN",
+        description: "GitHub personal access token",
+        required: true,
+      },
+      {
+        key: "HUBSPOT_ACCESS_TOKEN",
+        description: "HubSpot private app access token",
+        required: true,
+      },
+      {
+        key: "NOTION_TOKEN",
+        description: "Notion integration token",
+        required: true,
+      },
+    ],
+    systemPrompt:
+      "You are an executive copilot for a founder or senior leader. You synthesize GitHub (engineering), HubSpot (revenue), and Notion (strategy). Weekly digest includes: last 7 days of merged PRs (what shipped), current pipeline movement (new deals, stage changes, won/lost), and updated strategic docs. Synthesize into a 5-bullet executive summary with a \"what needs attention\" section. For board updates, write in narrative style: what we planned, what happened, what we learned, what is next. Never produce a data dump — always interpretation and recommendation.",
+    runtime: "claude",
+    model: "anthropic/claude-opus-4-7",
+  },
+  {
+    id: "the-operator",
+    name: "The Operator",
+    persona: "Chief of Staff",
+    emoji: "🎯",
+    tagline: "One question in, cross-functional answer out",
+    description:
+      "Pulls from GitHub (engineering status), Linear (sprint progress), and Notion (docs/OKRs) to answer high-level questions. Ask \"what shipped this week?\" or \"what are the blockers?\" and get a synthesized answer.",
+    category: "productivity",
+    color: "from-gray-800 to-gray-600",
+    skills: [{ source: "obra/superpowers" }],
+    mcpServers: [
+      {
+        name: "github",
+        type: "http",
+        url: "https://api.githubcopilot.com/mcp/",
+        headers: { Authorization: "Bearer {{GITHUB_TOKEN}}" },
+      },
+      {
+        name: "linear",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@linear/mcp-server"],
+        env: { LINEAR_API_KEY: "{{LINEAR_API_KEY}}" },
+      },
+      {
+        name: "notion",
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@notionhq/notion-mcp-server"],
+        env: { OPENAPI_MCP_HEADERS: '{"Authorization": "Bearer {{NOTION_TOKEN}}", "Notion-Version": "2022-06-28"}' },
+      },
+    ],
+    envVars: [
+      {
+        key: "GITHUB_TOKEN",
+        description: "GitHub personal access token",
+        required: true,
+      },
+      {
+        key: "LINEAR_API_KEY",
+        description: "Linear API key",
+        required: true,
+        link: "https://linear.app/settings/api",
+      },
+      {
+        key: "NOTION_TOKEN",
+        description: "Notion integration token",
+        required: true,
+        link: "https://www.notion.so/my-integrations",
+      },
+    ],
+    systemPrompt:
+      "You are a chief of staff with access to GitHub (engineering), Linear (sprint health), and Notion (strategy). You synthesize across all three — not a data dump but an executive summary. When asked about status, pull recent merged PRs, in-progress Linear tickets, and relevant Notion docs. Proactively flag misalignments: things planned in Notion but not tracked in Linear, or Linear tickets with no linked PRs. Answer in plain language, not system jargon.",
+    runtime: "claude",
+    model: "anthropic/claude-opus-4-7",
+  },
+  {
     id: "engineering-ed",
     name: "Engineering Ed",
     persona: "Senior Software Engineer",
@@ -442,63 +554,6 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
     model: "anthropic/claude-sonnet-4-6",
   },
   {
-    id: "the-operator",
-    name: "The Operator",
-    persona: "Chief of Staff",
-    emoji: "🎯",
-    tagline: "One question in, cross-functional answer out",
-    description:
-      "Pulls from GitHub (engineering status), Linear (sprint progress), and Notion (docs/OKRs) to answer high-level questions. Ask \"what shipped this week?\" or \"what are the blockers?\" and get a synthesized answer.",
-    category: "productivity",
-    color: "from-gray-800 to-gray-600",
-    skills: [{ source: "obra/superpowers" }],
-    mcpServers: [
-      {
-        name: "github",
-        type: "http",
-        url: "https://api.githubcopilot.com/mcp/",
-        headers: { Authorization: "Bearer {{GITHUB_TOKEN}}" },
-      },
-      {
-        name: "linear",
-        type: "stdio",
-        command: "npx",
-        args: ["-y", "@linear/mcp-server"],
-        env: { LINEAR_API_KEY: "{{LINEAR_API_KEY}}" },
-      },
-      {
-        name: "notion",
-        type: "stdio",
-        command: "npx",
-        args: ["-y", "@notionhq/notion-mcp-server"],
-        env: { OPENAPI_MCP_HEADERS: '{"Authorization": "Bearer {{NOTION_TOKEN}}", "Notion-Version": "2022-06-28"}' },
-      },
-    ],
-    envVars: [
-      {
-        key: "GITHUB_TOKEN",
-        description: "GitHub personal access token",
-        required: true,
-      },
-      {
-        key: "LINEAR_API_KEY",
-        description: "Linear API key",
-        required: true,
-        link: "https://linear.app/settings/api",
-      },
-      {
-        key: "NOTION_TOKEN",
-        description: "Notion integration token",
-        required: true,
-        link: "https://www.notion.so/my-integrations",
-      },
-    ],
-    systemPrompt:
-      "You are a chief of staff with access to GitHub (engineering), Linear (sprint health), and Notion (strategy). You synthesize across all three — not a data dump but an executive summary. When asked about status, pull recent merged PRs, in-progress Linear tickets, and relevant Notion docs. Proactively flag misalignments: things planned in Notion but not tracked in Linear, or Linear tickets with no linked PRs. Answer in plain language, not system jargon.",
-    runtime: "claude",
-    model: "anthropic/claude-opus-4-7",
-  },
-  {
     id: "growth-engine",
     name: "Growth Engine",
     persona: "Revenue & Content Lead",
@@ -638,61 +693,6 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
       "You are an internal comms manager who treats Slack as a source of truth. You surface decisions, action items, and announcements buried in conversation threads. When summarizing a channel, look for: explicit decisions in resolved threads, action items with owners, and announcements worth preserving. Write these to Notion in structured format: decision log with date/context/outcome, action items with owner and due date. When drafting announcements, match the tone of the channel. You rescue knowledge from the Slack void.",
     runtime: "claude",
     model: "anthropic/claude-sonnet-4-6",
-  },
-  {
-    id: "executive-copilot",
-    name: "Executive Copilot",
-    persona: "Founder's Right Hand",
-    emoji: "🏆",
-    tagline: "Gives you the weekly digest you actually need",
-    description:
-      "Synthesizes engineering velocity (GitHub), sales pipeline (HubSpot), and strategy docs (Notion) into briefings you actually want to read. Runs weekly digests, prepares board update drafts, answers cross-functional questions.",
-    category: "productivity",
-    color: "from-amber-500 to-yellow-400",
-    skills: [{ source: "obra/superpowers" }],
-    mcpServers: [
-      {
-        name: "github",
-        type: "http",
-        url: "https://api.githubcopilot.com/mcp/",
-        headers: { Authorization: "Bearer {{GITHUB_TOKEN}}" },
-      },
-      {
-        name: "hubspot",
-        type: "stdio",
-        command: "npx",
-        args: ["-y", "@hubspot/mcp-server"],
-        env: { HUBSPOT_ACCESS_TOKEN: "{{HUBSPOT_ACCESS_TOKEN}}" },
-      },
-      {
-        name: "notion",
-        type: "stdio",
-        command: "npx",
-        args: ["-y", "@notionhq/notion-mcp-server"],
-        env: { OPENAPI_MCP_HEADERS: '{"Authorization": "Bearer {{NOTION_TOKEN}}", "Notion-Version": "2022-06-28"}' },
-      },
-    ],
-    envVars: [
-      {
-        key: "GITHUB_TOKEN",
-        description: "GitHub personal access token",
-        required: true,
-      },
-      {
-        key: "HUBSPOT_ACCESS_TOKEN",
-        description: "HubSpot private app access token",
-        required: true,
-      },
-      {
-        key: "NOTION_TOKEN",
-        description: "Notion integration token",
-        required: true,
-      },
-    ],
-    systemPrompt:
-      "You are an executive copilot for a founder or senior leader. You synthesize GitHub (engineering), HubSpot (revenue), and Notion (strategy). Weekly digest includes: last 7 days of merged PRs (what shipped), current pipeline movement (new deals, stage changes, won/lost), and updated strategic docs. Synthesize into a 5-bullet executive summary with a \"what needs attention\" section. For board updates, write in narrative style: what we planned, what happened, what we learned, what is next. Never produce a data dump — always interpretation and recommendation.",
-    runtime: "claude",
-    model: "anthropic/claude-opus-4-7",
   },
 ];
 
