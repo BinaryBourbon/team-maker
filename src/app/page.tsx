@@ -42,6 +42,22 @@ export default function Home() {
             One click to add them to your AoD instance.
           </p>
 
+          {/* Vision nav */}
+          <div className="flex justify-center gap-3 mb-8">
+            <a
+              href="/vision/one-agent"
+              className="inline-flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+            >
+              🎯 Build One Great Agent
+            </a>
+            <a
+              href="/vision/org"
+              className="inline-flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+            >
+              🏢 Multi-Agent Org
+            </a>
+          </div>
+
           {/* Stats */}
           <div className="flex justify-center gap-8 text-sm text-gray-500 dark:text-gray-400">
             <div>
