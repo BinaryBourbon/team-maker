@@ -56,6 +56,12 @@ export default function Home() {
             >
               🏢 Multi-Agent Org
             </a>
+            <a
+              href="/vision/mission-control"
+              className="inline-flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm"
+            >
+              🎯 Mission Control
+            </a>
           </div>
 
           {/* Stats */}
